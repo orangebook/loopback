@@ -640,6 +640,9 @@ describe('relations - integration', function() {
 
   describe('hasAndBelongsToMany', function() {
     beforeEach(function defineProductAndCategoryModels() {
+      // Disable "Warning: overriding remoting type product"
+      this.app.remotes()._typeRegistry._options.warnWhenOverridingType = false;
+
       var product = app.model(
         'product',
         { properties: { id: 'string', name: 'string' }, dataSource: 'db' }
