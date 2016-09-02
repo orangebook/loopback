@@ -608,4 +608,37 @@ describe('loopback', function() {
       expect(methodNames).to.include('prototype.instanceMethod');
     });
   });
+
+  describe('Remote method inheritance', function() {
+    function getAllMethodNamesWithoutClassName(Model) {
+      return Model.sharedClass.methods().map(function(m) {
+        return m.stringName.replace(/^[^.]+\./, ''); // drop the class name
+      });
+    }
+
+    it('model inherits method from base model', function() {
+      var BaseModel = loopback.createModel('BaseModel');
+      loopback.configureModel(BaseModel, {
+        dataSource: null,
+        methods: {
+          greet: {
+            http: { path: '/greet' },
+          },
+        },
+      });
+
+      var MyCustomModel = loopback.createModel('MyCustomModel', {}, {
+        base: 'BaseModel',
+        methods: {
+          hello: {
+            http: { path: '/hello' },
+          },
+        },
+      });
+      var methodNames = getAllMethodNamesWithoutClassName(MyCustomModel);
+
+      expect(methodNames).to.include('greet');
+      expect(methodNames).to.include('hello');
+    });
+  });
 });
