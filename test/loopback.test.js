@@ -7,6 +7,9 @@ var it = require('./util/it');
 var describe = require('./util/describe');
 var Domain = require('domain');
 var EventEmitter = require('events').EventEmitter;
+var loopback = require('../');
+var expect = require('chai').expect;
+var assert = require('assert');
 
 describe('loopback', function() {
   var nameCounter = 0;
@@ -615,11 +618,14 @@ describe('loopback', function() {
         return m.stringName.replace(/^[^.]+\./, ''); // drop the class name
       });
     }
+    var app;
 
-    it('model inherits method from base model', function() {
-      var BaseModel = loopback.createModel('BaseModel');
-      loopback.configureModel(BaseModel, {
-        dataSource: null,
+    beforeEach(function() {
+      app = loopback({ localRegistry: true });
+    });
+
+    it('create model inherits method from base model', function() {
+      var Base = app.registry.createModel('Base', {}, {
         methods: {
           greet: {
             http: { path: '/greet' },
@@ -627,8 +633,8 @@ describe('loopback', function() {
         },
       });
 
-      var MyCustomModel = loopback.createModel('MyCustomModel', {}, {
-        base: 'BaseModel',
+      var MyCustomModel = app.registry.createModel('MyCustomModel', {}, {
+        base: 'Base',
         methods: {
           hello: {
             http: { path: '/hello' },
@@ -637,6 +643,62 @@ describe('loopback', function() {
       });
       var methodNames = getAllMethodNamesWithoutClassName(MyCustomModel);
 
+      expect(methodNames).to.include('greet');
+      expect(methodNames).to.include('hello');
+    });
+
+    it('create and config model inherits method from base model', function() {
+      var Base = app.registry.createModel('Base');
+      app.registry.configureModel(Base, {
+        dataSource: null,
+        methods: {
+          greet: {
+            http: { path: '/greet' },
+          },
+        },
+      });
+
+      var MyCustomModel = app.registry.createModel('MyCustomModel', {}, {
+        base: 'Base',
+        methods: {
+          hello: {
+            http: { path: '/hello' },
+          },
+        },
+      });
+      var methodNames = getAllMethodNamesWithoutClassName(MyCustomModel);
+
+      expect(methodNames).to.include('greet');
+      expect(methodNames).to.include('hello');
+    });
+
+    it('configure model inherits method from base model', function() {
+      var Base = app.registry.createModel('Base');
+      var MyCustomModel = app.registry.createModel('MyCustomModel', {}, {
+        base: 'Base',
+      });
+
+      app.registry.configureModel(Base, {
+        dataSource: null,
+        methods: {
+          greet: {
+            http: { path: '/greet' },
+          },
+        },
+      });
+
+      app.registry.configureModel(MyCustomModel, {
+        dataSource: null,
+        methods: {
+          hello: {
+            http: { path: '/hello' },
+          },
+        },
+      });
+      var baseMethodNames = getAllMethodNamesWithoutClassName(Base);
+      var methodNames = getAllMethodNamesWithoutClassName(MyCustomModel);
+
+      expect(baseMethodNames).to.include('greet');
       expect(methodNames).to.include('greet');
       expect(methodNames).to.include('hello');
     });
